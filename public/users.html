@@ -14,7 +14,13 @@
                 <li><a href="/">Home</a></li>
                 <li><a href="/users.html" class="active">Users</a></li>
                 <li><a href="/products.html">Products</a></li>
-                <li><a href="/login.html">Login</a></li>
+                <li id="login-link"><a href="/login.html">Login</a></li>
+                <li id="user-greeting" style="display: none;">
+                    <span class="greeting-text">Hello, <span id="user-name"></span>!</span>
+                </li>
+                <li id="logout-btn-container" style="display: none;">
+                    <button onclick="handleLogout()" class="btn-logout">Logout</button>
+                </li>
             </ul>
         </nav>
     </header>
@@ -58,6 +64,40 @@
     </footer>
 
     <script>
+        // Update navigation on load
+        window.addEventListener('load', () => {
+            updateNavigation();
+            loadUsers();
+        });
+
+        function updateNavigation() {
+            const user = sessionStorage.getItem('user');
+            const loginLink = document.getElementById('login-link');
+            const userGreeting = document.getElementById('user-greeting');
+            const userName = document.getElementById('user-name');
+            const logoutBtn = document.getElementById('logout-btn-container');
+            
+            if (user) {
+                const userData = JSON.parse(user);
+                const displayName = userData.nick_name || userData.full_name || 'User';
+                
+                if (loginLink) loginLink.style.display = 'none';
+                if (userGreeting) userGreeting.style.display = 'block';
+                if (userName) userName.textContent = displayName;
+                if (logoutBtn) logoutBtn.style.display = 'block';
+            } else {
+                if (loginLink) loginLink.style.display = 'block';
+                if (userGreeting) userGreeting.style.display = 'none';
+                if (logoutBtn) logoutBtn.style.display = 'none';
+            }
+        }
+
+        function handleLogout() {
+            sessionStorage.removeItem('user');
+            alert('✅ Logged out successfully');
+            window.location.href = '/';
+        }
+
         async function loadUsers() {
             try {
                 const response = await fetch('/api/users');
@@ -201,8 +241,6 @@
             errorDiv.textContent = message;
             errorDiv.style.display = 'block';
         }
-
-        loadUsers();
     </script>
 </body>
 </html>
