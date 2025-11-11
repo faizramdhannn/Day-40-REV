@@ -21,7 +21,6 @@
             </ul>
         </nav>
     </header>
-
     <main>
         <div class="container">
             <div class="login-container">
@@ -68,30 +67,33 @@
             </div>
         </div>
     </main>
-
     <footer>
         <p>&copy; 2025 Database Faiz</p>
     </footer>
-
     <script>
-        // Check if already logged in on page load
         window.addEventListener('load', () => {
             updateNavigation();
-            const user = sessionStorage.getItem('user');
-            if (user) {
+            checkExistingLogin();
+        });
+
+        function checkExistingLogin() {
+            const token = localStorage.getItem('token');
+            const user = localStorage.getItem('user');
+            
+            if (token && user) {
                 const userData = JSON.parse(user);
                 showSuccess(`Already logged in as ${userData.full_name || userData.nick_name}`);
                 setTimeout(() => {
                     window.location.href = '/';
                 }, 1500);
             }
-        });
+        }
 
         function updateNavigation() {
-            const user = sessionStorage.getItem('user');
+            const token = localStorage.getItem('token');
             const logoutBtn = document.getElementById('logout-btn-container');
             
-            if (user && logoutBtn) {
+            if (token && logoutBtn) {
                 logoutBtn.style.display = 'block';
             }
         }
@@ -120,11 +122,11 @@
                 const data = await response.json();
                 
                 if (data.success) {
-                    // Fixed: use data.user instead of undefined userData
                     showSuccess(`Welcome back, ${data.user.full_name || data.user.nick_name}!`);
                     
-                    // Store user info in sessionStorage
-                    sessionStorage.setItem('user', JSON.stringify(data.user));
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    localStorage.setItem('tokenExpiry', Date.now() + 3600000);
                     
                     setTimeout(() => {
                         window.location.href = '/';
@@ -142,7 +144,9 @@
         }
         
         function handleLogout() {
-            sessionStorage.removeItem('user');
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            localStorage.removeItem('tokenExpiry');
             showSuccess('Logged out successfully');
             setTimeout(() => {
                 window.location.href = '/';

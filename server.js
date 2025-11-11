@@ -1,13 +1,14 @@
 require('dotenv').config();
-
 const express = require('express');
 const { Pool } = require('pg');
 const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 const path = require('path');
-
 const app = express();
 const port = process.env.PORT || 3000;
 const SALT_ROUNDS = 10;
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this';
+const JWT_EXPIRES_IN = '1h';
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -44,6 +45,29 @@ poolProducts.connect((err, client, release) => {
   console.log('✅ Connected to database: products');
   release();
 });
+
+const authenticateToken = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) {
+    return res.status(401).json({
+      success: false,
+      error: 'Access token required'
+    });
+  }
+
+  jwt.verify(token, JWT_SECRET, (err, user) => {
+    if (err) {
+      return res.status(403).json({
+        success: false,
+        error: 'Invalid or expired token'
+      });
+    }
+    req.user = user;
+    next();
+  });
+};
 
 app.get('/api/users', async (req, res) => {
   try {
@@ -156,7 +180,6 @@ app.post('/api/login', async (req, res) => {
     }
     
     const user = result.rows[0];
-    
     const passwordMatch = await bcrypt.compare(password, user.password);
     
     if (!passwordMatch) {
@@ -166,12 +189,23 @@ app.post('/api/login', async (req, res) => {
       });
     }
     
+    const tokenPayload = {
+      id: user.id,
+      email: user.email,
+      full_name: user.full_name,
+      nick_name: user.nick_name
+    };
+    
+    const token = jwt.sign(tokenPayload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+    
     delete user.password;
     
     res.json({
       success: true,
       message: 'Login successful',
-      user: user
+      user: user,
+      token: token,
+      expiresIn: JWT_EXPIRES_IN
     });
   } catch (err) {
     console.error('❌ Login error:', err);
@@ -235,6 +269,14 @@ app.post('/api/register', async (req, res) => {
   }
 });
 
+app.get('/api/verify-token', authenticateToken, (req, res) => {
+  res.json({
+    success: true,
+    message: 'Token is valid',
+    user: req.user
+  });
+});
+
 app.post('/api/admin/hash-passwords', async (req, res) => {
   try {
     const { adminKey } = req.body;
@@ -278,9 +320,9 @@ app.post('/api/admin/hash-passwords', async (req, res) => {
 
 app.get('/api', (req, res) => {
   res.json({
-    message: 'PostgreSQL API Server - Multi Database (Secured)',
+    message: 'PostgreSQL API Server - Multi Database (JWT Secured)',
     status: 'running',
-    security: 'Password hashing enabled with bcrypt',
+    security: 'JWT authentication with 1 hour expiration',
     databases: {
       users: 'Connected',
       products: 'Connected'
@@ -293,23 +335,25 @@ app.get('/api', (req, res) => {
       allProducts: '/api/products',
       productById: '/api/products/:id',
       login: 'POST /api/login',
-      register: 'POST /api/register'
+      register: 'POST /api/register',
+      verifyToken: 'GET /api/verify-token'
     }
   });
 });
 
 app.listen(port, () => {
   console.log(`🚀 Server running at http://localhost:${port}`);
-  console.log(`🔒 Security: Password hashing enabled with bcrypt`);
-  console.log(`📁 Serving static files from 'public' directory`);
-  console.log(`\n📡 Available API endpoints:`);
+  console.log('🔒 Security: JWT authentication with 1 hour token expiration');
+  console.log('📁 Serving static files from public directory');
+  console.log('\n📡 Available API endpoints:');
   console.log(`   - GET  http://localhost:${port}/api/users`);
   console.log(`   - GET  http://localhost:${port}/api/users/:id`);
   console.log(`   - GET  http://localhost:${port}/api/products`);
   console.log(`   - GET  http://localhost:${port}/api/products/:id`);
-  console.log(`   - POST http://localhost:${port}/api/login (with bcrypt)`);
-  console.log(`   - POST http://localhost:${port}/api/register (with bcrypt)`);
+  console.log(`   - POST http://localhost:${port}/api/login (returns JWT)`);
+  console.log(`   - POST http://localhost:${port}/api/register`);
+  console.log(`   - GET  http://localhost:${port}/api/verify-token (requires JWT)`);
   console.log(`\n🌐 Web Interface:`);
   console.log(`   - http://localhost:${port}`);
-  console.log(`\n⚠️  Note: Install bcrypt with: npm install bcrypt`);
+  console.log('\n⚠️  Install dependencies: npm install jsonwebtoken');
 });

@@ -24,7 +24,6 @@
             </ul>
         </nav>
     </header>
-
     <main>
         <div class="hero">
             <h1 id="hero-title">Welcome to Database Manager</h1>
@@ -61,37 +60,46 @@
             </div>
         </div>
     </main>
-
     <footer>
         <p>&copy; 2025 Database Faiz</p>
     </footer>
-
     <script>
-        // Update navigation based on login status
         window.addEventListener('load', () => {
+            checkTokenExpiry();
             updateNavigation();
         });
 
+        function checkTokenExpiry() {
+            const tokenExpiry = localStorage.getItem('tokenExpiry');
+            
+            if (tokenExpiry && Date.now() > parseInt(tokenExpiry)) {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                localStorage.removeItem('tokenExpiry');
+                alert('⚠️ Your session has expired. Please login again.');
+                updateNavigation();
+            }
+        }
+
         function updateNavigation() {
-            const user = sessionStorage.getItem('user');
+            const user = localStorage.getItem('user');
+            const token = localStorage.getItem('token');
             const loginLink = document.getElementById('login-link');
             const userGreeting = document.getElementById('user-greeting');
             const userName = document.getElementById('user-name');
             const logoutBtn = document.getElementById('logout-btn-container');
             const heroTitle = document.getElementById('hero-title');
             
-            if (user) {
+            if (user && token) {
                 const userData = JSON.parse(user);
                 const displayName = userData.nick_name || userData.full_name || 'User';
                 
-                // Hide login link, show greeting and logout
                 if (loginLink) loginLink.style.display = 'none';
                 if (userGreeting) userGreeting.style.display = 'block';
                 if (userName) userName.textContent = displayName;
                 if (logoutBtn) logoutBtn.style.display = 'block';
                 if (heroTitle) heroTitle.textContent = `Hello, ${displayName}!`;
             } else {
-                // Show login link, hide greeting and logout
                 if (loginLink) loginLink.style.display = 'block';
                 if (userGreeting) userGreeting.style.display = 'none';
                 if (logoutBtn) logoutBtn.style.display = 'none';
@@ -100,10 +108,14 @@
         }
 
         function handleLogout() {
-            sessionStorage.removeItem('user');
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            localStorage.removeItem('tokenExpiry');
             alert('✅ Logged out successfully');
             updateNavigation();
         }
+
+        setInterval(checkTokenExpiry, 60000);
     </script>
 </body>
 </html>
