@@ -49,14 +49,12 @@ poolProducts.connect((err, client, release) => {
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
-
   if (!token) {
     return res.status(401).json({
       success: false,
       error: 'Access token required'
     });
   }
-
   jwt.verify(token, JWT_SECRET, (err, user) => {
     if (err) {
       return res.status(403).json({
@@ -69,6 +67,9 @@ const authenticateToken = (req, res, next) => {
   });
 };
 
+// ========== USERS ENDPOINTS ==========
+
+// Get all users
 app.get('/api/users', async (req, res) => {
   try {
     const result = await poolUsers.query('SELECT * FROM users ORDER BY id');
@@ -88,6 +89,7 @@ app.get('/api/users', async (req, res) => {
   }
 });
 
+// Get user by ID
 app.get('/api/users/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -115,6 +117,71 @@ app.get('/api/users/:id', async (req, res) => {
   }
 });
 
+// Update user
+app.put('/api/users/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { nick_name, email, phone, address, birthday } = req.body;
+    
+    const result = await poolUsers.query(
+      'UPDATE users SET nick_name = $1, email = $2, phone = $3, address = $4, birthday = $5 WHERE id = $6 RETURNING *',
+      [nick_name, email, phone, address, birthday, id]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'User not found'
+      });
+    }
+    
+    res.json({
+      success: true,
+      message: 'User updated successfully',
+      data: result.rows[0]
+    });
+  } catch (err) {
+    console.error('❌ Update error:', err);
+    res.status(500).json({
+      success: false,
+      error: 'Update error',
+      message: err.message
+    });
+  }
+});
+
+// Delete user
+app.delete('/api/users/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const result = await poolUsers.query('DELETE FROM users WHERE id = $1 RETURNING *', [id]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'User not found'
+      });
+    }
+    
+    res.json({
+      success: true,
+      message: 'User deleted successfully',
+      data: result.rows[0]
+    });
+  } catch (err) {
+    console.error('❌ Delete error:', err);
+    res.status(500).json({
+      success: false,
+      error: 'Delete error',
+      message: err.message
+    });
+  }
+});
+
+// ========== PRODUCTS ENDPOINTS ==========
+
+// Get all products
 app.get('/api/products', async (req, res) => {
   try {
     const result = await poolProducts.query('SELECT * FROM products ORDER BY id');
@@ -134,6 +201,7 @@ app.get('/api/products', async (req, res) => {
   }
 });
 
+// Get product by ID
 app.get('/api/products/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -161,6 +229,106 @@ app.get('/api/products/:id', async (req, res) => {
   }
 });
 
+app.post('/api/products', authenticateToken, async (req, res) => {
+  try {
+    const { sku, item_name, category, brand, price, description, media } = req.body;
+    
+    if (!item_name || !price) {
+      return res.status(400).json({
+        success: false,
+        error: 'Item name and price are required'
+      });
+    }
+    
+    const result = await poolProducts.query(
+      `INSERT INTO products (sku, item_name, category, brand, price, description, media) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7) 
+       RETURNING *`,
+      [sku, item_name, category, brand, price, description, media || null]
+    );
+    
+    res.json({
+      success: true,
+      message: 'Product added successfully',
+      data: result.rows[0]
+    });
+  } catch (err) {
+    console.error('❌ Add product error:', err);
+    res.status(500).json({
+      success: false,
+      error: 'Add product error',
+      message: err.message
+    });
+  }
+});
+
+// Update product
+app.put('/api/products/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { sku, item_name, category, brand, price, description, media } = req.body;
+    
+    const result = await poolProducts.query(
+      `UPDATE products 
+       SET sku = $1, item_name = $2, category = $3, brand = $4, price = $5, description = $6, media = $7 
+       WHERE id = $8 
+       RETURNING *`,
+      [sku, item_name, category, brand, price, description, media, id]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Product not found'
+      });
+    }
+    
+    res.json({
+      success: true,
+      message: 'Product updated successfully',
+      data: result.rows[0]
+    });
+  } catch (err) {
+    console.error('❌ Update error:', err);
+    res.status(500).json({
+      success: false,
+      error: 'Update error',
+      message: err.message
+    });
+  }
+});
+
+// Delete product
+app.delete('/api/products/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const result = await poolProducts.query('DELETE FROM products WHERE id = $1 RETURNING *', [id]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Product not found'
+      });
+    }
+    
+    res.json({
+      success: true,
+      message: 'Product deleted successfully',
+      data: result.rows[0]
+    });
+  } catch (err) {
+    console.error('❌ Delete error:', err);
+    res.status(500).json({
+      success: false,
+      error: 'Delete error',
+      message: err.message
+    });
+  }
+});
+
+// ========== AUTH ENDPOINTS ==========
+
 app.post('/api/login', async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -168,7 +336,7 @@ app.post('/api/login', async (req, res) => {
     console.log('Login attempt for email:', email);
     
     const result = await poolUsers.query(
-      'SELECT id, full_name, nick_name, email, password FROM users WHERE email = $1',
+      'SELECT id, nick_name, email, password FROM users WHERE email = $1',
       [email]
     );
     
@@ -192,7 +360,6 @@ app.post('/api/login', async (req, res) => {
     const tokenPayload = {
       id: user.id,
       email: user.email,
-      full_name: user.full_name,
       nick_name: user.nick_name
     };
     
@@ -219,14 +386,24 @@ app.post('/api/login', async (req, res) => {
 
 app.post('/api/register', async (req, res) => {
   try {
-    const { full_name, nick_name, email, password, phone, address, birthday } = req.body;
+    const { nick_name, email, password } = req.body;
     
     console.log('Register attempt for email:', email);
     
-    if (!full_name || !email || !password) {
+    if (!nick_name || !email || !password) {
       return res.status(400).json({
         success: false,
-        error: 'Full name, email, and password are required'
+        error: 'Nickname, email, and password are required'
+      });
+    }
+    
+    // Password strength validation
+    const passwordStrength = checkPasswordStrength(password);
+    if (passwordStrength.strength === 'weak') {
+      return res.status(400).json({
+        success: false,
+        error: 'Password is too weak',
+        details: passwordStrength.missing
       });
     }
     
@@ -246,10 +423,10 @@ app.post('/api/register', async (req, res) => {
     console.log('Password hashed successfully');
     
     const result = await poolUsers.query(
-      `INSERT INTO users (full_name, nick_name, email, password, phone, address, birthday) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7) 
-       RETURNING id, full_name, nick_name, email`,
-      [full_name, nick_name, email, hashedPassword, phone, address, birthday || null]
+      `INSERT INTO users (nick_name, email, password) 
+       VALUES ($1, $2, $3) 
+       RETURNING id, nick_name, email`,
+      [nick_name, email, hashedPassword]
     );
     
     console.log('User registered successfully:', result.rows[0].email);
@@ -257,7 +434,8 @@ app.post('/api/register', async (req, res) => {
     res.json({
       success: true,
       message: 'Registration successful',
-      user: result.rows[0]
+      user: result.rows[0],
+      passwordStrength: passwordStrength.strength
     });
   } catch (err) {
     console.error('❌ Register error:', err);
@@ -269,53 +447,49 @@ app.post('/api/register', async (req, res) => {
   }
 });
 
+// Password strength checker
+function checkPasswordStrength(password) {
+  const hasUpperCase = /[A-Z]/.test(password);
+  const hasLowerCase = /[a-z]/.test(password);
+  const hasNumber = /[0-9]/.test(password);
+  const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+  const minLength = password.length >= 8;
+  
+  let strength = 0;
+  const missing = [];
+  
+  if (hasUpperCase) strength++;
+  else missing.push('uppercase letter');
+  
+  if (hasLowerCase) strength++;
+  else missing.push('lowercase letter');
+  
+  if (hasNumber) strength++;
+  else missing.push('number');
+  
+  if (hasSpecialChar) strength++;
+  else missing.push('special character');
+  
+  if (minLength) strength++;
+  else missing.push('minimum 8 characters');
+  
+  let level = 'weak';
+  if (strength >= 5) level = 'high';
+  else if (strength >= 3) level = 'medium';
+  
+  return {
+    strength: level,
+    score: strength,
+    missing: missing
+  };
+}
+
 app.get('/api/verify-token', authenticateToken, (req, res) => {
   res.json({
     success: true,
     message: 'Token is valid',
     user: req.user
   });
-});
-
-app.post('/api/admin/hash-passwords', async (req, res) => {
-  try {
-    const { adminKey } = req.body;
-    
-    if (process.env.ADMIN_KEY && adminKey !== process.env.ADMIN_KEY) {
-      return res.status(403).json({
-        success: false,
-        error: 'Unauthorized'
-      });
-    }
-    
-    const users = await poolUsers.query('SELECT id, email, password FROM users');
-    
-    let updated = 0;
-    for (const user of users.rows) {
-      if (!user.password.startsWith('$2b$')) {
-        const hashedPassword = await bcrypt.hash(user.password, SALT_ROUNDS);
-        await poolUsers.query(
-          'UPDATE users SET password = $1 WHERE id = $2',
-          [hashedPassword, user.id]
-        );
-        updated++;
-        console.log(`✅ Hashed password for user: ${user.email}`);
-      }
-    }
-    
-    res.json({
-      success: true,
-      message: `Successfully hashed ${updated} passwords`,
-      total: users.rows.length
-    });
-  } catch (err) {
-    console.error('❌ Hash passwords error:', err);
-    res.status(500).json({
-      success: false,
-      error: 'Hash passwords error',
-      message: err.message
-    });
-  }
 });
 
 app.get('/api', (req, res) => {
@@ -328,32 +502,28 @@ app.get('/api', (req, res) => {
       products: 'Connected'
     },
     endpoints: {
-      home: '/',
-      api: '/api',
-      allUsers: '/api/users',
-      userById: '/api/users/:id',
-      allProducts: '/api/products',
-      productById: '/api/products/:id',
-      login: 'POST /api/login',
-      register: 'POST /api/register',
-      verifyToken: 'GET /api/verify-token'
+      users: {
+        getAll: 'GET /api/users',
+        getById: 'GET /api/users/:id',
+        update: 'PUT /api/users/:id (requires token)',
+        delete: 'DELETE /api/users/:id (requires token)'
+      },
+      products: {
+        getAll: 'GET /api/products',
+        getById: 'GET /api/products/:id',
+        add: 'POST /api/products (requires token)',
+        update: 'PUT /api/products/:id (requires token)',
+        delete: 'DELETE /api/products/:id (requires token)'
+      },
+      auth: {
+        login: 'POST /api/login',
+        register: 'POST /api/register',
+        verify: 'GET /api/verify-token'
+      }
     }
   });
 });
 
 app.listen(port, () => {
   console.log(`🚀 Server running at http://localhost:${port}`);
-  console.log('🔒 Security: JWT authentication with 1 hour token expiration');
-  console.log('📁 Serving static files from public directory');
-  console.log('\n📡 Available API endpoints:');
-  console.log(`   - GET  http://localhost:${port}/api/users`);
-  console.log(`   - GET  http://localhost:${port}/api/users/:id`);
-  console.log(`   - GET  http://localhost:${port}/api/products`);
-  console.log(`   - GET  http://localhost:${port}/api/products/:id`);
-  console.log(`   - POST http://localhost:${port}/api/login (returns JWT)`);
-  console.log(`   - POST http://localhost:${port}/api/register`);
-  console.log(`   - GET  http://localhost:${port}/api/verify-token (requires JWT)`);
-  console.log(`\n🌐 Web Interface:`);
-  console.log(`   - http://localhost:${port}`);
-  console.log('\n⚠️  Install dependencies: npm install jsonwebtoken');
 });

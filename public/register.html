@@ -15,15 +15,13 @@
                 <li><a href="/users.html">Users</a></li>
                 <li><a href="/products.html">Products</a></li>
                 <li><a href="/login.html">Login</a></li>
-                <li><button>Logout</button></li>
             </ul>
         </nav>
     </header>
-
     <main>
         <div class="container">
             <div class="login-container">
-                <div class="login-box register-box">
+                <div class="login-box">
                     <h1>📝 Register</h1>
                     <p class="login-subtitle">Create your account to get started</p>
                     
@@ -31,83 +29,60 @@
                     <div id="success" class="success" style="display: none;"></div>
                     
                     <form id="register-form" onsubmit="handleRegister(event)">
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="full_name">Full Name <span class="required">*</span></label>
-                                <input 
-                                    type="text" 
-                                    id="full_name" 
-                                    name="full_name" 
-                                    placeholder="Enter your full name"
-                                    required
-                                >
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="nick_name">Nickname</label>
-                                <input 
-                                    type="text" 
-                                    id="nick_name" 
-                                    name="nick_name" 
-                                    placeholder="Enter your nickname"
-                                >
-                            </div>
+                        <div class="form-group">
+                            <label for="nick_name">Nickname <span class="required">*</span></label>
+                            <input 
+                                type="text" 
+                                id="nick_name" 
+                                name="nick_name" 
+                                placeholder="Enter your nickname"
+                                required
+                            >
                         </div>
                         
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="email">Email <span class="required">*</span></label>
-                                <input 
-                                    type="email" 
-                                    id="email" 
-                                    name="email" 
-                                    placeholder="Enter your email"
-                                    required
-                                >
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="password">Password <span class="required">*</span></label>
-                                <input 
-                                    type="password" 
-                                    id="password" 
-                                    name="password" 
-                                    placeholder="Enter your password"
-                                    required
-                                    minlength="6"
-                                >
-                            </div>
+                        <div class="form-group">
+                            <label for="email">Email <span class="required">*</span></label>
+                            <input 
+                                type="email" 
+                                id="email" 
+                                name="email" 
+                                placeholder="Enter your email"
+                                required
+                            >
                         </div>
                         
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="phone">Phone</label>
-                                <input 
-                                    type="tel" 
-                                    id="phone" 
-                                    name="phone" 
-                                    placeholder="Enter your phone number"
-                                >
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="birthday">Birthday</label>
-                                <input 
-                                    type="date" 
-                                    id="birthday" 
-                                    name="birthday"
-                                >
+                        <div class="form-group">
+                            <label for="password">Password <span class="required">*</span></label>
+                            <input 
+                                type="password" 
+                                id="password" 
+                                name="password" 
+                                placeholder="Enter your password"
+                                required
+                                minlength="8"
+                                oninput="checkPasswordStrength()"
+                            >
+                            <div id="password-strength" class="password-strength" style="display: none;">
+                                <div class="strength-bar">
+                                    <div id="strength-bar-fill" class="strength-bar-fill"></div>
+                                </div>
+                                <div id="strength-text" class="strength-text"></div>
+                                <ul id="strength-requirements" class="strength-requirements"></ul>
                             </div>
                         </div>
                         
                         <div class="form-group">
-                            <label for="address">Address</label>
-                            <textarea 
-                                id="address" 
-                                name="address" 
-                                placeholder="Enter your address"
-                                rows="3"
-                            ></textarea>
+                            <label for="password_confirm">Confirm Password <span class="required">*</span></label>
+                            <input 
+                                type="password" 
+                                id="password_confirm" 
+                                name="password_confirm" 
+                                placeholder="Confirm your password"
+                                required
+                                minlength="8"
+                                oninput="checkPasswordMatch()"
+                            >
+                            <div id="password-match" class="password-match" style="display: none;"></div>
                         </div>
                         
                         <button type="submit" class="btn btn-primary" id="register-btn">
@@ -122,31 +97,127 @@
             </div>
         </div>
     </main>
-
     <footer>
         <p>&copy; 2025 Database Faiz</p>
     </footer>
-
     <script>
+        function checkPasswordStrength() {
+            const password = document.getElementById('password').value;
+            const strengthDiv = document.getElementById('password-strength');
+            const strengthBar = document.getElementById('strength-bar-fill');
+            const strengthText = document.getElementById('strength-text');
+            const requirementsList = document.getElementById('strength-requirements');
+            
+            if (password.length === 0) {
+                strengthDiv.style.display = 'none';
+                return;
+            }
+            
+            strengthDiv.style.display = 'block';
+            
+            // Check requirements
+            const hasUpperCase = /[A-Z]/.test(password);
+            const hasLowerCase = /[a-z]/.test(password);
+            const hasNumber = /[0-9]/.test(password);
+            const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+            const minLength = password.length >= 8;
+            
+            let strength = 0;
+            if (hasUpperCase) strength++;
+            if (hasLowerCase) strength++;
+            if (hasNumber) strength++;
+            if (hasSpecialChar) strength++;
+            if (minLength) strength++;
+            
+            // Update requirements list
+            requirementsList.innerHTML = `
+                <li class="${minLength ? 'valid' : 'invalid'}">
+                    ${minLength ? '✓' : '✗'} Minimum 8 characters
+                </li>
+                <li class="${hasUpperCase ? 'valid' : 'invalid'}">
+                    ${hasUpperCase ? '✓' : '✗'} At least 1 uppercase letter
+                </li>
+                <li class="${hasLowerCase ? 'valid' : 'invalid'}">
+                    ${hasLowerCase ? '✓' : '✗'} At least 1 lowercase letter
+                </li>
+                <li class="${hasNumber ? 'valid' : 'invalid'}">
+                    ${hasNumber ? '✓' : '✗'} At least 1 number
+                </li>
+                <li class="${hasSpecialChar ? 'valid' : 'invalid'}">
+                    ${hasSpecialChar ? '✓' : '✗'} At least 1 special character
+                </li>
+            `;
+            
+            // Update strength bar and text
+            let strengthLevel = 'weak';
+            let strengthColor = '#ff6b6b';
+            let barWidth = '20%';
+            
+            if (strength >= 5) {
+                strengthLevel = 'High';
+                strengthColor = '#51cf66';
+                barWidth = '100%';
+            } else if (strength >= 3) {
+                strengthLevel = 'Medium';
+                strengthColor = '#ffd43b';
+                barWidth = '60%';
+            } else {
+                strengthLevel = 'Low';
+                strengthColor = '#ff6b6b';
+                barWidth = '20%';
+            }
+            
+            strengthBar.style.width = barWidth;
+            strengthBar.style.backgroundColor = strengthColor;
+            strengthText.textContent = `Password Strength: ${strengthLevel}`;
+            strengthText.style.color = strengthColor;
+            
+            checkPasswordMatch();
+        }
+        
+        function checkPasswordMatch() {
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('password_confirm').value;
+            const matchDiv = document.getElementById('password-match');
+            
+            if (confirmPassword.length === 0) {
+                matchDiv.style.display = 'none';
+                return;
+            }
+            
+            matchDiv.style.display = 'block';
+            
+            if (password === confirmPassword) {
+                matchDiv.textContent = '✓ Passwords match';
+                matchDiv.className = 'password-match match-success';
+            } else {
+                matchDiv.textContent = '✗ Passwords do not match';
+                matchDiv.className = 'password-match match-error';
+            }
+        }
+        
         async function handleRegister(event) {
             event.preventDefault();
             
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('password_confirm').value;
+            
+            // Check if passwords match
+            if (password !== confirmPassword) {
+                showError('Passwords do not match');
+                return;
+            }
+            
             const formData = {
-                full_name: document.getElementById('full_name').value,
                 nick_name: document.getElementById('nick_name').value,
                 email: document.getElementById('email').value,
-                password: document.getElementById('password').value,
-                phone: document.getElementById('phone').value,
-                address: document.getElementById('address').value,
-                birthday: document.getElementById('birthday').value
+                password: password
             };
             
             const registerBtn = document.getElementById('register-btn');
             
-            // Hide previous messages
             hideMessages();
             
-            // Disable button and show loading
             registerBtn.disabled = true;
             registerBtn.textContent = 'Registering...';
             
@@ -166,17 +237,17 @@
                 console.log('Register response:', data);
                 
                 if (data.success) {
-                    showSuccess(`Registration successful! Welcome, ${data.user.full_name}!`);
+                    showSuccess(`Registration successful! Welcome, ${data.user.nick_name}! Password strength: ${data.passwordStrength}`);
                     
-                    // Store user info
-                    sessionStorage.setItem('user', JSON.stringify(data.user));
-                    
-                    // Redirect after 2 seconds
                     setTimeout(() => {
                         window.location.href = '/login.html';
                     }, 2000);
                 } else {
-                    showError(data.error || 'Registration failed');
+                    let errorMessage = data.error || 'Registration failed';
+                    if (data.details && data.details.length > 0) {
+                        errorMessage += '. Missing: ' + data.details.join(', ');
+                    }
+                    showError(errorMessage);
                     registerBtn.disabled = false;
                     registerBtn.textContent = 'Register';
                 }
@@ -192,8 +263,6 @@
             const errorDiv = document.getElementById('error');
             errorDiv.textContent = '❌ ' + message;
             errorDiv.style.display = 'block';
-            
-            // Scroll to top to show error
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
         
@@ -201,8 +270,6 @@
             const successDiv = document.getElementById('success');
             successDiv.textContent = '✅ ' + message;
             successDiv.style.display = 'block';
-            
-            // Scroll to top to show success
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
         

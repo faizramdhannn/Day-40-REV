@@ -24,22 +24,20 @@
             </ul>
         </nav>
     </header>
-
     <main>
         <div class="container">
             <div class="page-header">
                 <h1>👥 Users Database</h1>
                 <p id="user-count">Loading...</p>
             </div>
-
             <div id="loading" class="loading">Loading users...</div>
             <div id="error" class="error" style="display: none;"></div>
-
+            <div id="success" class="success" style="display: none;"></div>
             <div id="users-container" class="table-container">
                 <table id="users-table">
                     <thead>
                         <tr>
-                            <th>Full Name</th>
+                            <th>Nickname</th>
                             <th>Email</th>
                             <th>Phone</th>
                             <th>Actions</th>
@@ -51,33 +49,65 @@
             </div>
         </div>
     </main>
-
+    
     <div id="userModal" class="modal">
         <div class="modal-content">
             <span class="close" onclick="closeModal()">&times;</span>
             <div id="userDetail"></div>
         </div>
     </div>
-
+    
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeEditModal()">&times;</span>
+            <div class="detail-card">
+                <h2>✏️ Edit User</h2>
+                <form id="edit-form" onsubmit="handleEdit(event)">
+                    <input type="hidden" id="edit-id">
+                    <div class="form-group">
+                        <label for="edit-nick_name">Nickname</label>
+                        <input type="text" id="edit-nick_name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-email">Email</label>
+                        <input type="email" id="edit-email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-phone">Phone</label>
+                        <input type="tel" id="edit-phone">
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-phone">Address</label>
+                        <input type="tel" id="edit-address">
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-phone">Birthday</label>
+                        <input type="tel" id="edit-birthday">
+                    </div>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
     <footer>
         <p>&copy; 2025 Database Faiz</p>
     </footer>
-
     <script>
-        // Update navigation on load
         window.addEventListener('load', () => {
             updateNavigation();
             loadUsers();
         });
-
+        
         function updateNavigation() {
-            const user = sessionStorage.getItem('user');
+            const user = localStorage.getItem('user');
+            const token = localStorage.getItem('token');
             const loginLink = document.getElementById('login-link');
             const userGreeting = document.getElementById('user-greeting');
             const userName = document.getElementById('user-name');
             const logoutBtn = document.getElementById('logout-btn-container');
             
-            if (user) {
+            if (user && token) {
                 const userData = JSON.parse(user);
                 const displayName = userData.nick_name || userData.full_name || 'User';
                 
@@ -91,13 +121,15 @@
                 if (logoutBtn) logoutBtn.style.display = 'none';
             }
         }
-
+        
         function handleLogout() {
-            sessionStorage.removeItem('user');
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            localStorage.removeItem('tokenExpiry');
             alert('✅ Logged out successfully');
             window.location.href = '/';
         }
-
+        
         async function loadUsers() {
             try {
                 const response = await fetch('/api/users');
@@ -116,74 +148,62 @@
                 showError('Error connecting to server: ' + error.message);
             }
         }
-
+        
         function displayUsers(users) {
             const tbody = document.getElementById('users-tbody');
+            const token = localStorage.getItem('token');
             
             if (users.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" class="no-data">No users found</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="4" class="no-data">No users found</td></tr>';
                 return;
             }
             
             tbody.innerHTML = users.map(user => `
                 <tr>
-                    <td>${user.full_name || user.name || 'N/A'}</td>
+                    <td>${user.nick_name || 'N/A'}</td>
                     <td>${user.email || 'N/A'}</td>
                     <td>${user.phone || 'N/A'}</td>
-                    <td>
-                        <button class="btn-small" onclick='viewUser("${user.id}")'>View</button>
+                    <td class="action-buttons">
+                        <button class="btn-small btn-view" onclick='viewUser("${user.id}")'>View</button>
+                        ${token ? `
+                            <button class="btn-small btn-edit" onclick='openEditModal(${JSON.stringify(user).replace(/'/g, "&apos;")})'>Edit</button>
+                            <button class="btn-small btn-delete" onclick='deleteUser("${user.id}", "${user.nick_name || user.email}")'>Delete</button>
+                        ` : ''}
                     </td>
                 </tr>
             `).join('');
         }
-
+        
         async function viewUser(id) {
             try {
-                console.log('Fetching user with ID:', id);
                 const response = await fetch(`/api/users/${id}`);
                 const data = await response.json();
-                
-                console.log('User data received:', data);
                 
                 if (data.success) {
                     showUserDetail(data.data);
                 } else {
-                    console.error('Failed to load user:', data);
-                    alert('Failed to load user details: ' + (data.error || 'Unknown error'));
+                    alert('Failed to load user details');
                 }
             } catch (error) {
-                console.error('Error fetching user:', error);
                 alert('Error: ' + error.message);
             }
         }
-
+        
         function showUserDetail(user) {
-            console.log('Showing user detail:', user);
-            
             const modal = document.getElementById('userModal');
             const detailDiv = document.getElementById('userDetail');
             
-            if (!modal || !detailDiv) {
-                console.error('Modal elements not found');
-                return;
-            }
-            
             const imageUrl = user.image || 'https://via.placeholder.com/200x200/667eea/ffffff?text=No+Image';
-            const fullName = user.full_name || user.name || 'N/A';
             const nickName = user.nick_name || 'N/A';
             const email = user.email || 'N/A';
             const phone = user.phone || 'N/A';
             const address = user.address || 'N/A';
-            const birthday = user.birthday ? new Date(user.birthday).toLocaleDateString('id-ID', { 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
-            }) : 'N/A';
+            const birthday = user.birthday || 'N/A';
             
             detailDiv.innerHTML = `
                 <div class="detail-card">
                     <div class="detail-image">
-                        <img src="${imageUrl}" alt="${fullName}" onerror="this.src='https://via.placeholder.com/200x200/667eea/ffffff?text=No+Image'">
+                        <img src="${imageUrl}" alt="${nickName}" onerror="this.src='https://via.placeholder.com/200x200/667eea/ffffff?text=No+Image'">
                     </div>
                     <div class="detail-info">
                         <h2>👤 User Details</h2>
@@ -191,10 +211,6 @@
                             <div class="info-item">
                                 <span class="info-label">ID:</span>
                                 <span class="info-value">${user.id}</span>
-                            </div>
-                            <div class="info-item">
-                                <span class="info-label">Full Name:</span>
-                                <span class="info-value">${fullName}</span>
                             </div>
                             <div class="info-item">
                                 <span class="info-label">Nickname:</span>
@@ -209,37 +225,144 @@
                                 <span class="info-value">${phone}</span>
                             </div>
                             <div class="info-item">
-                                <span class="info-label">Birthday:</span>
-                                <span class="info-value">${birthday}</span>
-                            </div>
-                            <div class="info-item full-width">
-                                <span class="info-label">Address:</span>
+                                <span class="info-label">address:</span>
                                 <span class="info-value">${address}</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Brithday:</span>
+                                <span class="info-value">${birthday}</span>
                             </div>
                         </div>
                     </div>
                 </div>
             `;
             
-            console.log('Modal display set to block');
             modal.style.display = 'block';
         }
-
+        
+        function openEditModal(user) {
+            document.getElementById('edit-id').value = user.id;
+            document.getElementById('edit-nick_name').value = user.nick_name || '';
+            document.getElementById('edit-email').value = user.email || '';
+            document.getElementById('edit-phone').value = user.phone || '';
+            document.getElementById('edit-address').value = user.address || '';
+            document.getElementById('edit-birthday').value = user.birthday || '';
+            
+            document.getElementById('editModal').style.display = 'block';
+        }
+        
+        async function handleEdit(event) {
+            event.preventDefault();
+            
+            const id = document.getElementById('edit-id').value;
+            const token = localStorage.getItem('token');
+            
+            if (!token) {
+                alert('Please login first');
+                return;
+            }
+            
+            const formData = {
+                nick_name: document.getElementById('edit-nick_name').value,
+                email: document.getElementById('edit-email').value,
+                phone: document.getElementById('edit-phone').value,
+                phone: document.getElementById('edit-address').value,
+                phone: document.getElementById('edit-birthday').value
+            };
+            
+            try {
+                const response = await fetch(`/api/users/${id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(formData)
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showSuccess('User updated successfully!');
+                    closeEditModal();
+                    loadUsers();
+                } else {
+                    showError(data.error || 'Failed to update user');
+                }
+            } catch (error) {
+                showError('Error: ' + error.message);
+            }
+        }
+        
+        async function deleteUser(id, name) {
+            const token = localStorage.getItem('token');
+            
+            if (!token) {
+                alert('Please login first');
+                return;
+            }
+            
+            if (!confirm(`Are you sure you want to delete ${name}?`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/users/${id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showSuccess('User deleted successfully!');
+                    loadUsers();
+                } else {
+                    showError(data.error || 'Failed to delete user');
+                }
+            } catch (error) {
+                showError('Error: ' + error.message);
+            }
+        }
+        
         function closeModal() {
             document.getElementById('userModal').style.display = 'none';
         }
-
+        
+        function closeEditModal() {
+            document.getElementById('editModal').style.display = 'none';
+        }
+        
         window.onclick = function(event) {
-            const modal = document.getElementById('userModal');
-            if (event.target == modal) {
-                modal.style.display = 'none';
+            const userModal = document.getElementById('userModal');
+            const editModal = document.getElementById('editModal');
+            
+            if (event.target == userModal) {
+                userModal.style.display = 'none';
+            }
+            if (event.target == editModal) {
+                editModal.style.display = 'none';
             }
         }
-
+        
         function showError(message) {
             const errorDiv = document.getElementById('error');
-            errorDiv.textContent = message;
+            errorDiv.textContent = '❌ ' + message;
             errorDiv.style.display = 'block';
+            setTimeout(() => {
+                errorDiv.style.display = 'none';
+            }, 5000);
+        }
+        
+        function showSuccess(message) {
+            const successDiv = document.getElementById('success');
+            successDiv.textContent = '✅ ' + message;
+            successDiv.style.display = 'block';
+            setTimeout(() => {
+                successDiv.style.display = 'none';
+            }, 5000);
         }
     </script>
 </body>

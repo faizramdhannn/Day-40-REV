@@ -60,7 +60,6 @@ nav {
     background: #ffffff;
 }
 
-/* Greeting text style */
 .greeting-text {
     color: #51cf66;
     font-weight: 600;
@@ -74,7 +73,6 @@ nav {
     color: #ffffff;
 }
 
-/* Logout button style */
 .btn-logout {
     padding: 0.5rem 1.5rem;
     background: #ff6b6b;
@@ -185,6 +183,7 @@ main {
 .btn-primary {
     width: 100%;
     font-size: 1rem;
+    margin-top: 1rem;
 }
 
 .btn-small {
@@ -196,15 +195,51 @@ main {
     border-radius: 5px;
     cursor: pointer;
     transition: background 0.3s;
+    margin: 0 0.2rem;
 }
 
 .btn-small:hover {
     background: #e0e0e0;
 }
 
+.btn-view {
+    background: #4dabf7;
+    color: #ffffff;
+}
+
+.btn-view:hover {
+    background: #339af0;
+}
+
+.btn-edit {
+    background: #ffd43b;
+    color: #000000;
+}
+
+.btn-edit:hover {
+    background: #fcc419;
+}
+
+.btn-delete {
+    background: #ff6b6b;
+    color: #ffffff;
+}
+
+.btn-delete:hover {
+    background: #ff5252;
+}
+
+.action-buttons {
+    white-space: nowrap;
+}
+
 .page-header {
     margin-bottom: 2rem;
     text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
 }
 
 .page-header h1 {
@@ -297,10 +332,6 @@ tbody tr:hover {
     padding: 2rem;
 }
 
-.register-box {
-    max-width: 650px;
-}
-
 .login-box h1 {
     text-align: center;
     color: #ffffff;
@@ -359,6 +390,72 @@ tbody tr:hover {
     color: #666;
 }
 
+/* Password Strength Indicator */
+.password-strength {
+    margin-top: 0.5rem;
+}
+
+.strength-bar {
+    width: 100%;
+    height: 8px;
+    background: #1a1a1a;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 0.5rem;
+}
+
+.strength-bar-fill {
+    height: 100%;
+    transition: width 0.3s, background-color 0.3s;
+    border-radius: 4px;
+}
+
+.strength-text {
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.strength-requirements {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    font-size: 0.85rem;
+}
+
+.strength-requirements li {
+    padding: 0.2rem 0;
+}
+
+.strength-requirements li.valid {
+    color: #51cf66;
+}
+
+.strength-requirements li.invalid {
+    color: #ff6b6b;
+}
+
+/* Password Match Indicator */
+.password-match {
+    margin-top: 0.5rem;
+    padding: 0.5rem;
+    border-radius: 5px;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.match-success {
+    background: #001a00;
+    color: #51cf66;
+    border-left: 3px solid #51cf66;
+}
+
+.match-error {
+    background: #1a0000;
+    color: #ff6b6b;
+    border-left: 3px solid #ff6b6b;
+}
+
 .login-note {
     text-align: center;
     color: #b0b0b0;
@@ -403,6 +500,8 @@ footer {
     max-width: 600px;
     box-shadow: 0 10px 50px rgba(0, 0, 0, 0.5);
     animation: slideDown 0.3s;
+    max-height: 90vh;
+    overflow-y: auto;
 }
 
 .modal-large {
@@ -449,7 +548,6 @@ footer {
 .detail-image {
     text-align: center;
     margin-bottom: 2rem;
-    margin-left: 4rem;
 }
 
 .detail-image img {
@@ -567,6 +665,12 @@ footer {
     
     th, td {
         padding: 0.5rem;
+    }
+    
+    .action-buttons {
+        display: flex;
+        flex-direction: column;
+        gap: 0.3rem;
     }
     
     .modal-content {
